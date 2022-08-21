@@ -230,7 +230,7 @@ function Show-Menu {
             }
 
             # Clamp the focused index to within the menu and scroll if needed to keep it on screen.
-            $index = [Math]::Clamp($index, 0, $MenuItems.Count - 1)
+            $index = [Math]::Min([Math]::Max($index, 0), $MenuItems.Count - 1)
             $scroll = Get-NewScrollIndex @itemsAndHeight -ScrollIndex $scroll -FocusIndex $index
 
             # Move the cursor back to the top of the menu so we can overwrite the entire menu.
@@ -259,7 +259,7 @@ function Show-YesNoPrompt {
         [switch] $DefaultNo
     )
 
-    $result = Show-Menu -Title $Title -MenuItems 'Yes', 'No' -Default ($DefaultNo ? 1 : 0)
+    $result = Show-Menu -Title $Title -MenuItems 'Yes', 'No' -Default $(if ($DefaultNo) { 1 } else { 0 })
 
     return $result -eq 'Yes'
 }
@@ -451,13 +451,10 @@ if (Test-Path -Path '.git') {
 
 if ($null -eq $repoPath) {
     Write-Host 'This script must clone your user config repo locally for modifications.'
-    Write-Host '(If you have done this already, cancel and run the script from the repo folder.)'
+    Write-Host '(If you have done this already, press Ctrl+C to cancel and re-run the'
+    Write-Host 'script from the repo folder.)'
     Write-Host
-    if (!(Show-YesNoPrompt -Title 'Continue?')) {
-        exit 1
-    }
-
-    Write-Host 'If you do not yet have a user config repo, please sign in to https://github.com,'
+    Write-Host 'If you do not have a user config repo, please sign in to https://github.com,'
     Write-Host 'open the following URL, click the "Use this template" button, and follow the'
     Write-Host 'instructions to create your repo.'
     Write-Host
@@ -580,14 +577,16 @@ $copyKeymap = Show-YesNoPrompt -Title 'Copy the stock keymap for customization?'
 
 Write-Host 'Adding the following to your user config repo:'
 if ($shieldIds) {
-    Write-Host "`e[1m- MCU Board:`e[0m    $($controller.name)  `e[90m($boardIds)"
-    Write-Host "`e[1m- Shield:`e[0m       $($keyboard.name)  `e[90m($shieldIds)"
+    Write-Host "- MCU Board:    $($controller.name)" -NoNewline
+    Write-Host "  ($boardIds)" -ForegroundColor Black
+    Write-Host "- Shield:       $($keyboard.name)" -NoNewline
+    Write-Host "  ($shieldIds)" -ForegroundColor Black
 }
 else {
-    Write-Host "`e[1m- Board:`e[0m        $($keyboard.name)  `e[90m($boardIds)"
+    Write-Host "- Board:        $($keyboard.name)  `e[90m($boardIds)"
 }
-Write-Host "`e[1m- Copy keymap?:`e[0m $($copyKeymap ? 'Yes': 'No')"
-Write-Host "`e[1m- Repo URL:`e[0m     $repoUrl"
+Write-Host "- Copy keymap?: $(if ($copyKeymap) {'Yes'} else {'No'})"
+Write-Host "- Repo URL:     $repoUrl"
 Write-Host
 if (!(Show-YesNoPrompt -Title 'Continue?')) {
     Write-Host 'Canceled.'
