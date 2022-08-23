@@ -1,5 +1,5 @@
 [project]
-name = "zmk-setup"
+name = "zmk.setup"
 description = "ZMK Firmware setup script"
 authors = [
     {name = "Joel Spadin", email = "joelspadin@gmail.com"},
@@ -29,10 +29,10 @@ requires = ["setuptools >= 43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["zmk_setup"]
+packages = ["zmk.setup"]
 
 [tool.setuptools.dynamic]
-version = {attr = "zmk_setup.__version__"}
+version = {attr = "zmk.setup.__version__"}
 
 [tool.pylint.MASTER]
 # Make sure the project root is in sys.path so pylint can import all the modules
