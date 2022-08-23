@@ -6,6 +6,7 @@ Miscellaneous utilities
 import re
 import textwrap
 from pathlib import Path
+from typing import TextIO
 import requests
 
 
@@ -24,6 +25,16 @@ def print_block(text: str, trim=False):
     if trim:
         text = text.strip()
     print(text)
+
+
+def prefix_output(stream: TextIO, prefix: str):
+    """
+    Prints output from the stream, prefixing each line with the given text.
+    """
+    with stream:
+        for line in iter(stream.readline, ""):
+            print(prefix, end="")
+            print(line, end="")
 
 
 def download(url: str, filename: Path | str):

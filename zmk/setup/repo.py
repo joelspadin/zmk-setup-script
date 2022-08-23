@@ -4,11 +4,14 @@
 Git repository functions
 """
 import subprocess
+from subprocess import Popen, PIPE, STDOUT
 from pathlib import Path
 from typing import Optional
+
 from .config import Config
 from .menu import show_menu
-from .util import StopWizard, print_block
+from .terminal import Color, colorize
+from .util import StopWizard, prefix_output, print_block
 
 
 class Repo:
@@ -32,7 +35,12 @@ class Repo:
 
     def git(self, *args: str):
         """Run Git and echo the output"""
-        subprocess.check_call(["git", *args], cwd=self.path, encoding="utf-8")
+        with Popen(
+            ["git", *args], cwd=self.path, encoding="utf-8", stdout=PIPE, stderr=STDOUT
+        ) as process:
+            with process.stdout:
+                prefix_output(process.stdout, colorize("git: ", Color.BLUE))
+            process.wait()
 
     def git_output(self, *args: str):
         """Run Git and return the output"""
