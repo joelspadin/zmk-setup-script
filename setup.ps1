@@ -584,7 +584,8 @@ if ($shieldIds) {
     Write-Host "  ($shieldIds)" -ForegroundColor Black
 }
 else {
-    Write-Host "- Board:        $($keyboard.name)  `e[90m($boardIds)"
+    Write-Host "- Board:        $($keyboard.name)" -NoNewline
+    Write-Host "  ($boardIds)" -ForegroundColor Black
 }
 Write-Host "- Copy keymap?: $(if ($copyKeymap) {'Yes'} else {'No'})"
 Write-Host "- Repo URL:     $repoUrl"
@@ -635,6 +636,11 @@ if ($copyKeymap) {
 Write-Host 'Updating build matrix...'
 Add-BuildMatrix -BoardIds $boardIds -ShieldIds $shieldIds
 
+if (!(git status --porcelain)) {
+    Write-Host 'This keyboard is already in the repo. No changes made.'
+    exit 0
+}
+
 Write-Host 'Committing changes...'
 Write-Host
 
@@ -657,10 +663,13 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+Write-Host
 if ($actionsUrl) {
-    Write-Host
     Write-Host 'Success! Your firmware will be available from GitHub Actions at:' -ForegroundColor Green
     Write-Host
     Write-Host "    $actionsUrl"
     Write-Host
+}
+else {
+    Write-Host 'Success!' -ForegroundColor Green
 }
