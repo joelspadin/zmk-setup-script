@@ -21,6 +21,9 @@ dev = [
     "pylint",
 ]
 
+[project.scripts]
+zmk-setup = "zmk.setup:main"
+
 [project.urls]
 repository = "https://github.com/joelspadin/zmk-setup-script"
 
