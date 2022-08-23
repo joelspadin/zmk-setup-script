@@ -22,7 +22,7 @@ dev = [
 ]
 
 [project.scripts]
-zmk-setup = "zmk.setup:main"
+zmk-setup = "zmk.setup.__main__:main"
 
 [project.urls]
 repository = "https://github.com/joelspadin/zmk-setup-script"

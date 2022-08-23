@@ -12,10 +12,10 @@ from enum import Enum
 class Color(Enum):
     """Common terminal colors"""
 
-    BLACK = "30"
     RED = "31"
     GREEN = "32"
     YELLOW = "33"
+    GRAY = "90"
 
 
 def colorize(text: str, color: str | Color):
@@ -61,6 +61,18 @@ try:
     import msvcrt
     from ctypes import byref, wintypes, windll
 
+    _STD_INPUT_HANDLE = -10
+    _STD_OUTPUT_HANDLE = -11
+
+    _ENABLE_PROCESSED_OUTPUT = 1
+    _ENABLE_WRAP_AT_EOL_OUTPUT = 2
+    _ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4
+    _VT_FLAGS = (
+        _ENABLE_PROCESSED_OUTPUT
+        | _ENABLE_WRAP_AT_EOL_OUTPUT
+        | _ENABLE_VIRTUAL_TERMINAL_PROCESSING
+    )
+
     _WINDOWS_SPECIAL_KEYS = {
         71: HOME,
         72: UP,
@@ -93,34 +105,54 @@ try:
         return key
 
     @contextmanager
-    def no_echo():
+    def enable_vt_mode():
+        """
+        Context manager which enables virtual terminal processing.
+        """
+        kernel32 = windll.kernel32
+        stdout_handle = kernel32.GetStdHandle(_STD_OUTPUT_HANDLE)
+
+        old_stdout_mode = wintypes.DWORD()
+        kernel32.GetConsoleMode(stdout_handle, byref(old_stdout_mode))
+
+        new_stdout_mode = old_stdout_mode.value | _VT_FLAGS
+
+        try:
+            kernel32.SetConsoleMode(stdout_handle, new_stdout_mode)
+            yield
+        finally:
+            kernel32.SetConsoleMode(stdout_handle, old_stdout_mode)
+
+    @contextmanager
+    def disable_echo():
         """
         Context manager which disables console echo
         """
         kernel32 = windll.kernel32
-        stdin_handle = kernel32.GetStdHandle(-10)
-        stdout_handle = kernel32.GetStdHandle(-11)
+        stdin_handle = kernel32.GetStdHandle(_STD_INPUT_HANDLE)
 
         old_stdin_mode = wintypes.DWORD()
-        old_stdout_mode = wintypes.DWORD()
         kernel32.GetConsoleMode(stdin_handle, byref(old_stdin_mode))
-        kernel32.GetConsoleMode(stdout_handle, byref(old_stdout_mode))
 
         try:
             kernel32.SetConsoleMode(stdin_handle, 0)
-            kernel32.SetConsoleMode(stdout_handle, 7)
             yield
         finally:
             kernel32.SetConsoleMode(stdin_handle, old_stdin_mode)
-            kernel32.SetConsoleMode(stdout_handle, old_stdout_mode)
 
 except ImportError:
     import termios
 
-    # import tty
+    @contextmanager
+    def enable_vt_mode():
+        """
+        Context manager which enables virtual terminal processing.
+        """
+        # Assume that Unix terminals support VT escape sequences by default.
+        yield
 
     @contextmanager
-    def no_echo():
+    def disable_echo():
         """
         Context manager which disables console echo
         """
@@ -129,7 +161,7 @@ except ImportError:
         newattr[3] &= ~(termios.ECHO | termios.ICANON)
 
         try:
-            termios.settcattr(sys.stdin, termios.TCSAFLUSH, newattr)
+            termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, newattr)
             yield
         finally:
             termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, oldattr)
@@ -140,22 +172,15 @@ except ImportError:
 
         Special keys such as arrow keys return xterm or vt escape sequences.
         """
-        with no_echo():
+        with disable_echo():
             return os.read(sys.stdin.fileno(), 4)
-        # oldattr = termios.tcgetattr(sys.stdin)
-
-        # try:
-        #     tty.setcbreak(sys.stdin.fileno())
-        #     return os.read(sys.stdin.fileno(), 4)
-        # finally:
-        #     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldattr)
 
 
 def get_cursor_pos():
     """
     Returns the cursor position as a tuple (row, column). Positions are 1-based.
     """
-    with no_echo():
+    with disable_echo():
         sys.stdout.write("\x1b[6n")
         sys.stdout.flush()
 
@@ -171,6 +196,6 @@ def set_cursor_pos(row=1, col=1):
     """
     Sets the cursor to the given row and column. Positions are 1-based.
     """
-    with no_echo():
+    with disable_echo():
         sys.stdout.write(f"\x1b[{row};{col}H")
         sys.stdout.flush()

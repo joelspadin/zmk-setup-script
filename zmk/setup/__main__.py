@@ -11,7 +11,7 @@ from requests.exceptions import HTTPError
 from .config import Config
 from .menu import StopMenu, show_prompt
 from .repo import Repo, select_repo, check_dependencies
-from .terminal import Color, colorize
+from .terminal import Color, colorize, enable_vt_mode
 from .util import StopWizard, download, print_block
 from .zmk import (
     KeyboardSelection,
@@ -29,7 +29,8 @@ def main():
     config = Config()
 
     try:
-        run_wizard(config)
+        with enable_vt_mode():
+            run_wizard(config)
     except (KeyboardInterrupt, EOFError, StopMenu):
         # User pressed Ctrl+C or otherwise canceled an input prompt
         print("Canceled.")
@@ -73,8 +74,8 @@ def print_pending_changes(repo: Repo, selected: KeyboardSelection, copy_keymap: 
     """
     print("Adding the following to your user config repo:")
 
-    boards = colorize(f"({' '.join(selected.board_ids)})", Color.BLACK)
-    shields = colorize(f"({' '.join(selected.shield_ids)})", Color.BLACK)
+    boards = colorize(f"({' '.join(selected.board_ids)})", Color.GRAY)
+    shields = colorize(f"({' '.join(selected.shield_ids)})", Color.GRAY)
 
     if selected.shield_ids:
         print_block(
