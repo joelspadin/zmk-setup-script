@@ -108,18 +108,17 @@ def run_wizard(config: Config):
     check_repo_files(repo, config)
 
     selected = select_keyboard(config)
-    copy_keymap = show_prompt("Copy the stock keymap for customization?")
 
-    print_pending_changes(repo, selected, copy_keymap)
+    print_pending_changes(repo, selected)
 
     if not show_prompt("Continue?"):
         raise StopWizard()
 
-    apply_changes(repo, config, selected, copy_keymap)
+    apply_changes(repo, config, selected)
     commit_and_push_changes(repo, selected)
 
 
-def print_pending_changes(repo: Repo, selected: KeyboardSelection, copy_keymap: bool):
+def print_pending_changes(repo: Repo, selected: KeyboardSelection):
     """
     Print a message indicating the changes that will be made.
     """
@@ -139,31 +138,21 @@ def print_pending_changes(repo: Repo, selected: KeyboardSelection, copy_keymap: 
     else:
         print(f"- Board:        {selected.keyboard['name']}  {boards}")
 
-    print_block(
-        f"""
-        - Copy keymap?: {'Yes' if copy_keymap else 'No'}
-        - Repo URL:     {repo.remote_url()}
-        """,
-        trim=True,
-    )
+    print(f"- Repo URL:     {repo.remote_url()}")
     print()
 
 
-def apply_changes(
-    repo: Repo, config: Config, selected: KeyboardSelection, copy_keymap: bool
-):
+def apply_changes(repo: Repo, config: Config, selected: KeyboardSelection):
     """
     Makes the requested changes to the files in the repo
     """
-    download_files(repo, config, selected, copy_keymap)
+    download_files(repo, config, selected)
 
     print("Updating build matrix...")
     add_to_build_matrix(repo, selected)
 
 
-def download_files(
-    repo: Repo, config: Config, selected: KeyboardSelection, copy_keymap: bool
-):
+def download_files(repo: Repo, config: Config, selected: KeyboardSelection):
     """
     Downloads any keyboard files (keymaps, configs, etc.) that are missing for
     the selected keyboard.
@@ -173,9 +162,7 @@ def download_files(
     config_name = get_config_file_name(selected.keyboard)
     keymap_name = get_keymap_file_name(selected.keyboard)
 
-    keyboard_files = [config_name]
-    if copy_keymap:
-        keyboard_files.append(keymap_name)
+    keyboard_files = [config_name, keymap_name]
 
     for name in keyboard_files:
         dest = base_path / name
