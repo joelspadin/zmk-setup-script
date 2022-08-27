@@ -131,6 +131,9 @@ def _check_git_config(option: str, message: str):
 
 def select_repo(config: Config) -> Repo:
     """Prompts the user to select a repo to modify"""
+    if config.repo_path:
+        return Repo(config.repo_path)
+
     repo = Repo(Path.cwd())
     if repo.is_repo and _should_use_current_directory():
         return repo

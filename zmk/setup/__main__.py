@@ -4,6 +4,8 @@
 ZMK setup script
 """
 
+import argparse
+from pathlib import Path
 from subprocess import CalledProcessError
 import sys
 import textwrap
@@ -26,7 +28,53 @@ from .zmk import (
 def main():
     """Main entry point"""
 
+    parser = argparse.ArgumentParser(
+        description="Create a ZMK user config repo and add keyboards to it."
+    )
+    parser.add_argument(
+        "-r",
+        "--repo",
+        type=Path,
+        help="""
+            Path to a ZMK user config repo to modify. If this option is not set,
+            the current directory is checked to see if it is a Git repo.
+            Otherwise, prompts to create a new repo.
+            """,
+    )
+    parser.add_argument(
+        "--metadata-url",
+        help="""
+            URL of a JSON file which lists the supported boards and shields.
+            This file contains an array of objects which hold the contents of
+            the metadata .yaml files for each board and shield. Each object must
+            also have a "directory" member added, which is the relative path to
+            the board/shield directory.
+            """,
+    )
+    parser.add_argument(
+        "--template-url",
+        help="URL of the template repo to use when initializing a new repo.",
+    )
+    parser.add_argument(
+        "--files-url",
+        help="""
+            Base URL for downloading files from the ZMK repo. Defaults to the
+            main ZMK repo. For example, to get files from a GitHub repo, use
+            "https://raw.githubusercontent.com/<user>/<repo>/<branch>".
+            """,
+    )
+
     config = Config()
+    args = parser.parse_args()
+
+    if args.repo:
+        config.repo_path = args.repo
+    if args.metadata_url:
+        config.metadata_url = args.metadata_url
+    if args.template_url:
+        config.template_url = args.template_url
+    if args.files_url:
+        config.files_url = args.file_url
 
     try:
         with enable_vt_mode():
@@ -47,6 +95,9 @@ def run_wizard(config: Config):
     check_dependencies()
 
     repo = select_repo(config)
+
+    if not repo.is_repo:
+        raise StopWizard(f"{repo.path} is not a Git repo.")
 
     if repo.has_changes():
         raise StopWizard(
