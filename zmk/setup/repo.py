@@ -142,9 +142,14 @@ def select_repo(config: Config) -> Repo:
 
 
 def _should_use_current_directory():
+    if Path("build.yaml").exists() and Path("config/west.yml").exists():
+        # Looks like a ZMK config repo. Use it automatically.
+        return True
+
     print_block(
         f"""
         Found an existing Git repo at {Path.cwd()}
+        but it doesn't look like a ZMK user config repo.
         """
     )
 
